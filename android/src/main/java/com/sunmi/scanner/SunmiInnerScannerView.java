@@ -1,5 +1,7 @@
 package com.sunmi.scanner;
 
+import java.util.Iterator;
+
 import android.content.Context;
 import android.content.res.Configuration;
 import android.graphics.Rect;
@@ -114,22 +116,17 @@ public class SunmiInnerScannerView extends RelativeLayout implements Camera.Prev
                 int height = size.height;
 
                 if (getScreenOrientation(getContext()) == Configuration.ORIENTATION_PORTRAIT) {
-                    byte[] rotatedData = new byte[data.length];
-                    for (int y = 0; y < height; y++) {
-                        for (int x = 0; x < width; x++)
-                            rotatedData[x * height + height - y - 1] = data[x + y * width];
-                    }
+                    data = rotateData(data, width, height);
 
                     int tmp = width;
                     width = height;
                     height = tmp;
-                    data = rotatedData;
                 }
 
                 Image source = new Image(width, height, "Y800");
                 Rect scanImageRect = new Rect(PADDING,PADDING,width-(2*PADDING),height-(2*PADDING));
                 source.setCrop(scanImageRect.top,scanImageRect.left,
-                        scanImageRect.width(),scanImageRect.height());
+                scanImageRect.width(),scanImageRect.height());
                 source.setData(data);// 填充数据
                 asyncDecode = new AsyncDecode();
                 asyncDecode.setMute(this.isMute()>0);//静音
@@ -140,6 +137,16 @@ public class SunmiInnerScannerView extends RelativeLayout implements Camera.Prev
             // TODO: Terrible hack. It is possible that this method is invoked after camera is released.
             Log.e(TAG, e.toString(), e);
         }
+    }
+
+    private byte[] rotateData(byte[] data, int width, int height) {
+        byte[] rotatedData = new byte[data.length];
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++)
+                rotatedData[x * height + height - y - 1] = data[x + y * width];
+        }
+
+        return rotatedData;
     }
 
 
@@ -183,12 +190,13 @@ public class SunmiInnerScannerView extends RelativeLayout implements Camera.Prev
                 }
                 array = new WritableNativeArray();
                 SymbolSet syms = scanner.getResults();// 获取解码结果
+
                 for (Symbol sym : syms) {
                     WritableMap r = new WritableNativeMap();
                     r.putString("symbolName",sym.getSymbolName());
                     r.putString("result",sym.getResult());
                     array.pushMap(r);
-                }
+                }                
             }
 
             return null;

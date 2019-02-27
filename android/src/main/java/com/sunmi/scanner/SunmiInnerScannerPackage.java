@@ -25,7 +25,7 @@ public class SunmiInnerScannerPackage implements ReactPackage {
             ReactApplicationContext reactContext) {
         List<NativeModule> modules = new ArrayList<>();
 
-        modules.add(new SunmiInnerScannerModule(reactContext));
+        // modules.add(new SunmiInnerScannerModule(reactContext));
 
         return modules;
     }

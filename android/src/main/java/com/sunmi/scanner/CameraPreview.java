@@ -57,44 +57,46 @@ public class CameraPreview extends TextureView implements TextureView.SurfaceTex
     }
 
     public void startCameraPreview() {
-        if (mCamera != null) {
-            try {
-                Camera.Parameters parameters = mCamera.getParameters();
-                Camera.Size picSizes = getBestSize(parameters.getSupportedPictureSizes(),_surfaceTextureWidth,_surfaceTextureHeight);
-                parameters.setPictureSize(picSizes.width,picSizes.height);
-                Camera.Size previewSizes = getBestSize(parameters.getSupportedPreviewSizes(),_surfaceTextureWidth,_surfaceTextureHeight);
-                parameters.setPreviewSize(previewSizes.width,previewSizes.height);
-                mPreviewing = true;
-                mCamera.setParameters(parameters);
-                mCamera.setPreviewTexture(this._surfaceTexture);
-                mCamera.setDisplayOrientation(getDisplayOrientation());
-                mCamera.setPreviewCallback(mPreviewCallback);
-                mCamera.startPreview();
-                if (mAutoFocus) {
-                    if (mSurfaceCreated) { // check if surface created before using autofocus
-                        safeAutoFocus();
-                    } else {
-                        scheduleAutoFocus(); // wait 1 sec and then do check again
-                    }
+        if (mCamera == null)
+            return;
+            
+        try {
+            Camera.Parameters parameters = mCamera.getParameters();
+            Camera.Size picSizes = getBestSize(parameters.getSupportedPictureSizes(),_surfaceTextureWidth,_surfaceTextureHeight);
+            parameters.setPictureSize(picSizes.width,picSizes.height);
+            Camera.Size previewSizes = getBestSize(parameters.getSupportedPreviewSizes(),_surfaceTextureWidth,_surfaceTextureHeight);
+            parameters.setPreviewSize(previewSizes.width,previewSizes.height);
+            mPreviewing = true;
+            mCamera.setParameters(parameters);
+            mCamera.setPreviewTexture(this._surfaceTexture);
+            mCamera.setDisplayOrientation(getDisplayOrientation());
+            mCamera.setPreviewCallback(mPreviewCallback);
+            mCamera.startPreview();
+            if (mAutoFocus) {
+                if (mSurfaceCreated) { // check if surface created before using autofocus
+                    safeAutoFocus();
+                } else {
+                    scheduleAutoFocus(); // wait 1 sec and then do check again
                 }
-            } catch (Exception e) {
-                Log.e(TAG, e.toString(), e);
             }
-
-        }
+        } catch (Exception e) {
+            Log.e(TAG, e.toString(), e);
+        }        
     }
 
     public void stopCameraPreview() {
-        if (mCamera != null) {
-            try {
-                mPreviewing = false;
-                mCamera.cancelAutoFocus();
-                mCamera.setPreviewCallback(null);
-                mCamera.stopPreview();
-            } catch (Exception e) {
-                Log.e(TAG, e.toString(), e);
-            }
+        if (mCamera == null)
+            return;
+
+        try {
+            mPreviewing = false;
+            mCamera.cancelAutoFocus();
+            mCamera.setPreviewCallback(null);
+            mCamera.stopPreview();
+        } catch (Exception e) {
+            Log.e(TAG, e.toString(), e);
         }
+        
     }
 
     public int getDisplayOrientation() {
@@ -139,23 +141,25 @@ public class CameraPreview extends TextureView implements TextureView.SurfaceTex
     }
 
     public void setAutoFocus(boolean state) {
-        if (mCamera != null && mPreviewing) {
-            if (state == mAutoFocus) {
-                return;
-            }
-            mAutoFocus = state;
-            if (mAutoFocus) {
-                if (mSurfaceCreated) { // check if surface created before using autofocus
-                    Log.v(TAG, "Starting autofocus");
-                    safeAutoFocus();
-                } else {
-                    scheduleAutoFocus(); // wait 1 sec and then do check again
-                }
+        if (mCamera == null || !mPreviewing)
+            return;
+        
+        if (state == mAutoFocus)
+            return;
+        
+        mAutoFocus = state;
+        if (mAutoFocus) {
+            if (mSurfaceCreated) { // check if surface created before using autofocus
+                Log.v(TAG, "Starting autofocus");
+                safeAutoFocus();
             } else {
-                Log.v(TAG, "Cancelling autofocus");
-                mCamera.cancelAutoFocus();
+                scheduleAutoFocus(); // wait 1 sec and then do check again
             }
+            return;
         }
+        
+        Log.v(TAG, "Cancelling autofocus");
+        mCamera.cancelAutoFocus();                
     }
 
     private Runnable doAutoFocus = new Runnable() {
@@ -191,13 +195,14 @@ public class CameraPreview extends TextureView implements TextureView.SurfaceTex
     public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
         _surfaceTextureWidth = width;
         _surfaceTextureHeight = height;
-        if (mCamera != null) {
-            try {
-                mCamera.setDisplayOrientation(getDisplayOrientation());
-            } catch (Exception e) {
-                Log.e(TAG, e.toString(), e);
-            }
-        }
+        if (mCamera == null)
+            return;
+
+        try {
+            mCamera.setDisplayOrientation(getDisplayOrientation());
+        } catch (Exception e) {
+            Log.e(TAG, e.toString(), e);
+        }        
     }
 
     @Override
@@ -222,21 +227,27 @@ public class CameraPreview extends TextureView implements TextureView.SurfaceTex
     }
 
     public void setFlash(boolean flag) {
-        if (mCamera != null && mCameraManager.isFlashSupported(mCamera)) {
-            Camera.Parameters parameters = mCamera.getParameters();
-            if (flag) {
-                if (parameters.getFlashMode().equals(Camera.Parameters.FLASH_MODE_TORCH)) {
-                    return;
-                }
-                parameters.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
-            } else {
-                if (parameters.getFlashMode().equals(Camera.Parameters.FLASH_MODE_OFF)) {
-                    return;
-                }
-                parameters.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
+        if (mCamera == null || !mCameraManager.isFlashSupported(mCamera))
+            return;
+
+        Camera.Parameters parameters = mCamera.getParameters();
+
+        if (flag) {
+            if (parameters.getFlashMode().equals(Camera.Parameters.FLASH_MODE_TORCH)) {
+                return;
             }
-            mCamera.setParameters(parameters);
+
+            parameters.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
+        } else {
+            if (parameters.getFlashMode().equals(Camera.Parameters.FLASH_MODE_OFF)) {
+                return;
+            }
+
+            parameters.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
         }
+
+        mCamera.setParameters(parameters);
+        
     }
 
     public Camera.Size getBestSize(List<Camera.Size> supportedSizes, int maxWidth, int maxHeight) {

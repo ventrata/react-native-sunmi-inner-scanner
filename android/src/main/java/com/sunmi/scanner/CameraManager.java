@@ -33,10 +33,11 @@ public class CameraManager {
     }
 
     public void releaseCamera() {
-        if (mCamera != null) {
-            mCamera.release(); // release the camera for other applications
-            mCamera = null;
-        }
+        if (mCamera == null)
+            return;
+            
+        mCamera.release(); // release the camera for other applications
+        mCamera = null;        
     }
 
     public Camera getCameraInstance() {
@@ -80,21 +81,21 @@ public class CameraManager {
 
     public boolean isFlashSupported(Camera camera) {
         // Credits: Top answer at http://stackoverflow.com/a/19599365/868173
-        if (camera != null) {
-            Camera.Parameters parameters = camera.getParameters();
+        if (camera == null)
+            return false;
+            
+            
+        Camera.Parameters parameters = camera.getParameters();
 
-            if (parameters.getFlashMode() == null) {
-                return false;
-            }
-
-            List<String> supportedFlashModes = parameters.getSupportedFlashModes();
-            if (supportedFlashModes == null || supportedFlashModes.isEmpty() || supportedFlashModes.size() == 1 && supportedFlashModes.get(0).equals(Camera.Parameters.FLASH_MODE_OFF)) {
-                return false;
-            }
-        } else {
+        if (parameters.getFlashMode() == null) {
             return false;
         }
 
+        List<String> supportedFlashModes = parameters.getSupportedFlashModes();
+        if (supportedFlashModes == null || supportedFlashModes.isEmpty() || supportedFlashModes.size() == 1 && supportedFlashModes.get(0).equals(Camera.Parameters.FLASH_MODE_OFF)) {
+            return false;
+        }
+        
         return true;
     }
 }
