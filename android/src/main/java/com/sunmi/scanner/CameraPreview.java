@@ -262,4 +262,10 @@ public class CameraPreview extends TextureView implements TextureView.SurfaceTex
         return bestSize;
     }
 
+    public void flash(int state) {
+        if (mCameraManager == null)
+            return;
+
+        mCameraManager.setFlash(state);
+    }
 }

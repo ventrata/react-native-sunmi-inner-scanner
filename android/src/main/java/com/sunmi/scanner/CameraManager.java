@@ -7,6 +7,7 @@ package com.sunmi.scanner;
 import android.hardware.Camera;
 
 import java.util.List;
+import static java.lang.Thread.sleep;
 
 public class CameraManager {
     private int mCameraId = -1;
@@ -96,6 +97,56 @@ public class CameraManager {
         }
 
         return true;
+    }
+
+    // 1 = ON
+    // 0 = OFF
+    public void setFlash(int state) {
+        if (mCamera == null)
+            return;
+
+        try {
+            Camera.Parameters mParam = mCamera.getParameters();
+            if (state == 1)
+                mParam.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
+            else
+                mParam.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
+
+            setParameters(mParam);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Copied from sunmi scanner demo
+    private int setParameters(Camera.Parameters params) {
+
+        byte n = 0;
+
+        if (mCamera == null) return -1;
+        if (params == null) return -1;
+
+        while (n < 5) {
+            try {
+                mCamera.setParameters(params);
+            } catch (Exception e) {
+                n++;
+
+                try {
+                    sleep(50);
+                } catch (InterruptedException e1) {
+                    e1.printStackTrace();
+                }
+
+                continue;
+            }
+
+            break;
+        }
+
+        if (n >= 5) return -2;
+
+        return 0;
     }
 }
 
