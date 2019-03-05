@@ -10,6 +10,9 @@ import java.util.List;
 import static java.lang.Thread.sleep;
 
 public class CameraManager {
+    private static final int FLASH_TORCH = 1;
+    private static final int FLASH_OFF = 0;
+
     private int mCameraId = -1;
     private Camera mCamera;
 
@@ -99,15 +102,13 @@ public class CameraManager {
         return true;
     }
 
-    // 1 = ON
-    // 0 = OFF
     public void setFlash(int state) {
         if (mCamera == null)
             return;
 
         try {
             Camera.Parameters mParam = mCamera.getParameters();
-            if (state == 1)
+            if (state == FLASH_TORCH)
                 mParam.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
             else
                 mParam.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
