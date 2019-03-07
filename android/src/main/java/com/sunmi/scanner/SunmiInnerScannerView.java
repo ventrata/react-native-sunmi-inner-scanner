@@ -55,6 +55,8 @@ public class SunmiInnerScannerView extends RelativeLayout implements Camera.Prev
         this.scanner.setConfig(0, Config.ENABLE_MULTILESYMS, enable);
     }
 
+    public void setTorch(int torch) { mPreview.flash(torch); }
+    
     public void setInverseEnable(int enable) {
         this.scanner.setConfig(0, Config.ENABLE_INVERSE, enable);
     }
