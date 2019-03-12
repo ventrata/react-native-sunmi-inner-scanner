@@ -1,5 +1,6 @@
 package com.sunmi.scanner;
 
+import android.util.Log;
 import android.view.View;
 import com.facebook.react.uimanager.ThemedReactContext;
 import com.facebook.react.uimanager.ViewGroupManager;
@@ -17,6 +18,7 @@ public class SunmiInnerScannerViewManager extends ViewGroupManager<SunmiInnerSca
 
     @Override
     protected SunmiInnerScannerView createViewInstance(ThemedReactContext reactContext) {
+        Log.i(TAG, "creating new instance");
         return new SunmiInnerScannerView(reactContext);
     }
 
@@ -49,7 +51,7 @@ public class SunmiInnerScannerViewManager extends ViewGroupManager<SunmiInnerSca
     public void setMute(SunmiInnerScannerView view, int mute){view.setMute(mute);}
 
     @ReactProp(name = "torch")
-    public void setTorch(SunmiInnerScannerView view, int torch){view.setTorch(torch);}
+    public void setTorch(SunmiInnerScannerView view, boolean torch){view.setFlash(torch);}
     
     @Override
     public void addView(SunmiInnerScannerView parent, View child, int index) {

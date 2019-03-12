@@ -1,24 +1,31 @@
 package com.sunmi.scanner;
 
+import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.graphics.Rect;
-import android.hardware.Camera;
+import android.media.ImageReader;
 import android.os.AsyncTask;
+import android.util.DisplayMetrics;
 import android.util.Log;
-import android.view.Display;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.RelativeLayout;
+
 import com.facebook.react.bridge.*;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
+
 import com.sunmi.scan.*;
+
+import java.nio.ByteBuffer;
 
 /**
  * Created by januslo on 2017/5/16.
+ * Edit Jakub 2019/3/12
  */
 
-public class SunmiInnerScannerView extends RelativeLayout implements Camera.PreviewCallback {
+@TargetApi(23)
+public class SunmiInnerScannerView extends RelativeLayout implements ImageReader.OnImageAvailableListener {
     private CameraPreview mPreview;
     private ImageScanner scanner;
     private SoundUtils soundUtils;
@@ -26,6 +33,7 @@ public class SunmiInnerScannerView extends RelativeLayout implements Camera.Prev
     private static final int PADDING=10;
     private long scanInterval;
     private int mute;
+
 
     private static final String TAG = "SunmiInnerScannerView";
 
@@ -55,8 +63,6 @@ public class SunmiInnerScannerView extends RelativeLayout implements Camera.Prev
         this.scanner.setConfig(0, Config.ENABLE_MULTILESYMS, enable);
     }
 
-    public void setTorch(int torch) { mPreview.flash(torch); }
-    
     public void setInverseEnable(int enable) {
         this.scanner.setConfig(0, Config.ENABLE_INVERSE, enable);
     }
@@ -77,24 +83,21 @@ public class SunmiInnerScannerView extends RelativeLayout implements Camera.Prev
         this.scanInterval = scanInterval;
     }
 
-    public void onResume() {
-        mPreview.startCamera();
-    }
+    public void onResume() { mPreview.openCamera(); }
 
     public void onPause() {
-        mPreview.stopCamera();
+        mPreview.closeCamera();
     }
 
-    public void setCameraType(String cameraType) {
-        mPreview.setCameraType(cameraType);
-    }
+    //TODO: do something
+    // public void setCameraType(String cameraType) { mPreview.setCameraType(cameraType); }
 
     public void setFlash(boolean flag) {
         mPreview.setFlash(flag);
     }
 
     public void stopCamera() {
-        mPreview.stopCamera();
+        mPreview.closeCamera();
     }
 
     @Override
@@ -104,16 +107,19 @@ public class SunmiInnerScannerView extends RelativeLayout implements Camera.Prev
         this.removeView(this.mPreview);
         this.addView(this.mPreview,0);
     }
+
     @Override
-    public void onPreviewFrame(byte[] data, Camera camera) {
-        try {
+    public void onImageAvailable(ImageReader reader) {
+        try (android.media.Image image = reader.acquireNextImage()) {
             long now = System.currentTimeMillis();
-            if(asyncDecode == null ||
-                    (asyncDecode.isStoped() && now - asyncDecode.getEndTimeMillis()>this.scanInterval)) {
-                Camera.Parameters parameters = camera.getParameters();
-                Camera.Size size = parameters.getPreviewSize();
-                int width = size.width;
-                int height = size.height;
+            if (asyncDecode == null ||
+                    (asyncDecode.isStoped() && now - asyncDecode.getEndTimeMillis() > this.scanInterval)) {
+                int width = reader.getWidth();
+                int height = reader.getHeight();
+
+                ByteBuffer buffer = image.getPlanes()[0].getBuffer();
+                byte[] data = new byte[buffer.remaining()];
+                buffer.get(data);
 
                 if (getScreenOrientation(getContext()) == Configuration.ORIENTATION_PORTRAIT) {
                     byte[] rotatedData = new byte[data.length];
@@ -129,21 +135,20 @@ public class SunmiInnerScannerView extends RelativeLayout implements Camera.Prev
                 }
 
                 Image source = new Image(width, height, "Y800");
-                Rect scanImageRect = new Rect(PADDING,PADDING,width-(2*PADDING),height-(2*PADDING));
-                source.setCrop(scanImageRect.top,scanImageRect.left,
-                        scanImageRect.width(),scanImageRect.height());
+                Rect scanImageRect = new Rect(PADDING, PADDING, width - (2 * PADDING), height - (2 * PADDING));
+                source.setCrop(scanImageRect.top, scanImageRect.left,
+                        scanImageRect.width(), scanImageRect.height());
                 source.setData(data);// 填充数据
                 asyncDecode = new AsyncDecode();
-                asyncDecode.setMute(this.isMute()>0);//静音
+                asyncDecode.setMute(this.isMute() > 0);//静音
                 asyncDecode.execute(source);// 调用异步执行解码
-            }
 
+            }
         } catch (Exception e) {
             // TODO: Terrible hack. It is possible that this method is invoked after camera is released.
             Log.e(TAG, e.toString(), e);
         }
     }
-
 
     protected void sendEvent(ReactContext context, String eventName, WritableMap params){
         context.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
@@ -152,13 +157,14 @@ public class SunmiInnerScannerView extends RelativeLayout implements Camera.Prev
 
     private static int getScreenOrientation(Context context) {
         WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
-        Display display = wm.getDefaultDisplay();
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        wm.getDefaultDisplay().getMetrics(displayMetrics);
 
         int orientation;
-        if (display.getWidth() == display.getHeight()) {
+        if (displayMetrics.widthPixels == displayMetrics.heightPixels) {
             orientation = Configuration.ORIENTATION_SQUARE;
         } else {
-            if (display.getWidth() < display.getHeight()) {
+            if (displayMetrics.widthPixels < displayMetrics.widthPixels) {
                 orientation = Configuration.ORIENTATION_PORTRAIT;
             } else {
                 orientation = Configuration.ORIENTATION_LANDSCAPE;
