@@ -237,6 +237,8 @@ public class CameraPreview extends TextureView implements TextureView.SurfaceTex
         _surfaceTexture = surface;
         _surfaceTextureWidth = width;
         _surfaceTextureHeight = height;
+
+        openCamera();
     }
 
     @Override
