@@ -37,7 +37,7 @@ export class SunmiScannerView extends Component {
         onCodeScan: PropTypes.func,
         scanInterval: PropTypes.number,
         mute: PropTypes.number,
-        torch: PropTypes.number
+        torch: PropTypes.bool
     };
     static defaultProps = {
         xDensity: 2,
@@ -49,7 +49,7 @@ export class SunmiScannerView extends Component {
         },
         scanInterval:1000,
         mute:0,
-        torch:0
+        torch:false
     }
 
     render() {
