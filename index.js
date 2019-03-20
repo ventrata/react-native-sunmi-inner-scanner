@@ -37,6 +37,7 @@ export class SunmiScannerView extends Component {
         onCodeScan: PropTypes.func,
         scanInterval: PropTypes.number,
         mute: PropTypes.number,
+        focus: PropTypes.number,
         torch: PropTypes.bool
     };
     static defaultProps = {
@@ -49,6 +50,7 @@ export class SunmiScannerView extends Component {
         },
         scanInterval:1000,
         mute:0,
+        focus: 40,
         torch:false
     }
 

@@ -47,6 +47,7 @@ public class CameraPreview extends TextureView implements TextureView.SurfaceTex
     private Handler mBackgroundHandler;
     private HandlerThread mBackgroundThread;
     private String mCameraId;
+    private float minimumLensDistance;
 
     private ImageReader.OnImageAvailableListener mPreviewCallback;
 
@@ -94,6 +95,8 @@ public class CameraPreview extends TextureView implements TextureView.SurfaceTex
             captureRequestBuilder.addTarget(surface);
 
             CameraCharacteristics characteristics = mCameraManager.getCameraCharacteristics(mCameraId);
+            minimumLensDistance = characteristics.get(CameraCharacteristics.LENS_INFO_MINIMUM_FOCUS_DISTANCE);
+
             StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
             Size previewSize = map.getOutputSizes(ImageFormat.YUV_420_888)[0];
 
@@ -113,7 +116,6 @@ public class CameraPreview extends TextureView implements TextureView.SurfaceTex
                     }
                     // When the session is ready, we start displaying the preview.
                     mCameraCaptureSession = cameraCaptureSession;
-                    updatePreview();
                 }
                 @Override
                 public void onConfigureFailed(@NonNull CameraCaptureSession cameraCaptureSession) {
@@ -180,17 +182,13 @@ public class CameraPreview extends TextureView implements TextureView.SurfaceTex
         }
     };
 
-    protected void updatePreview() {
-        if(null == mCameraDevice) {
-            Log.e(TAG, "updatePreview error, return");
-        }
-
-        // AUTO ZOOM
-        captureRequestBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
+    public void setFocus(int focus) {
+        float num = (((float) focus) * minimumLensDistance / 100);
+        captureRequestBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, num);
         try {
             mCameraCaptureSession.setRepeatingRequest(captureRequestBuilder.build(), null, mBackgroundHandler);
         } catch (Throwable e) {
-            Log.w(TAG, "Error on upadte preview: " + e.getMessage());
+            Log.e(TAG, "Error on setting focus: " + e.getMessage());
         }
     }
 

@@ -52,6 +52,9 @@ public class SunmiInnerScannerViewManager extends ViewGroupManager<SunmiInnerSca
 
     @ReactProp(name = "torch")
     public void setTorch(SunmiInnerScannerView view, boolean torch){view.setFlash(torch);}
+
+    @ReactProp(name = "focus")
+    public void setFocus(SunmiInnerScannerView view, int focus){view.setFocus(focus);}
     
     @Override
     public void addView(SunmiInnerScannerView parent, View child, int index) {
