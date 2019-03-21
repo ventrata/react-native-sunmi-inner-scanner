@@ -50,7 +50,7 @@ export class SunmiScannerView extends Component {
         },
         scanInterval:1000,
         mute:0,
-        focus: 40,
+        focus: 0,
         torch:false
     }
 

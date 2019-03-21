@@ -10,6 +10,7 @@ import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraDevice;
+import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CaptureRequest;
 import android.media.ImageReader;
 import android.os.Handler;
@@ -47,7 +48,6 @@ public class CameraPreview extends TextureView implements TextureView.SurfaceTex
     private Handler mBackgroundHandler;
     private HandlerThread mBackgroundThread;
     private String mCameraId;
-    private float minimumLensDistance;
 
     private ImageReader.OnImageAvailableListener mPreviewCallback;
 
@@ -95,8 +95,6 @@ public class CameraPreview extends TextureView implements TextureView.SurfaceTex
             captureRequestBuilder.addTarget(surface);
 
             CameraCharacteristics characteristics = mCameraManager.getCameraCharacteristics(mCameraId);
-            minimumLensDistance = characteristics.get(CameraCharacteristics.LENS_INFO_MINIMUM_FOCUS_DISTANCE);
-
             StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
             Size previewSize = map.getOutputSizes(ImageFormat.YUV_420_888)[0];
 
@@ -116,6 +114,7 @@ public class CameraPreview extends TextureView implements TextureView.SurfaceTex
                     }
                     // When the session is ready, we start displaying the preview.
                     mCameraCaptureSession = cameraCaptureSession;
+                    updatePreview();
                 }
                 @Override
                 public void onConfigureFailed(@NonNull CameraCaptureSession cameraCaptureSession) {
@@ -156,9 +155,9 @@ public class CameraPreview extends TextureView implements TextureView.SurfaceTex
         // Pick the smallest of those big enough. If there is no one big enough, pick the
         // largest of those not big enough.
         if (bigEnough.size() > 0) {
-            return Collections.min(bigEnough, new CompareSizesByArea());
+            return Collections.min(bigEnough, new com.sunmi.scanner.CameraPreview.CompareSizesByArea());
         } else if (notBigEnough.size() > 0) {
-            return Collections.max(notBigEnough, new CompareSizesByArea());
+            return Collections.max(notBigEnough, new com.sunmi.scanner.CameraPreview.CompareSizesByArea());
         } else {
             Log.e(TAG, "Couldn't find any suitable preview size");
             return choices[0];
@@ -182,13 +181,20 @@ public class CameraPreview extends TextureView implements TextureView.SurfaceTex
         }
     };
 
-    public void setFocus(int focus) {
-        float num = (((float) focus) * minimumLensDistance / 100);
-        captureRequestBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, num);
+    protected void updatePreview() {
+        if(null == mCameraDevice) {
+            Log.e(TAG, "updatePreview error, return");
+        }
+
+        if (isAutoFocusSupported())
+            captureRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_AUTO);
+        else
+            captureRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
+
         try {
             mCameraCaptureSession.setRepeatingRequest(captureRequestBuilder.build(), null, mBackgroundHandler);
         } catch (Throwable e) {
-            Log.e(TAG, "Error on setting focus: " + e.getMessage());
+            Log.e(TAG, "Error on upadte preview: " + e);
         }
     }
 
@@ -282,6 +288,85 @@ public class CameraPreview extends TextureView implements TextureView.SurfaceTex
         } catch (CameraAccessException e) {
             Log.e(TAG, "ERROR: " + e);
         }
+    }
+
+    ////////////////////////// FOCUS FUNCTIONS
+
+    public void setFocus(int focus) {
+        if (captureRequestBuilder == null)
+            return;
+
+        float minDist = getMinimumFocusDistance();
+        float num = ((focus) *  minDist / 100);
+        Log.d(TAG, "Setting focus: " + focus + "(minimumFocusDistance: "+minDist+") result: " + num);
+
+        captureRequestBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, num);
+        try {
+            mCameraCaptureSession.setRepeatingRequest(captureRequestBuilder.build(), null, mBackgroundHandler);
+        } catch (Throwable e) {
+            Log.e(TAG, "Error on setting focus: " + e.getMessage());
+        }
+    }
+
+    private float getMinimumFocusDistance() {
+        if (mCameraId == null)
+            return 0;
+
+        Float minimumLens = null;
+        try {
+            CameraManager manager = (CameraManager) getContext().getSystemService(Context.CAMERA_SERVICE);
+            CameraCharacteristics c = manager.getCameraCharacteristics(mCameraId);
+            minimumLens = c.get(CameraCharacteristics.LENS_INFO_MINIMUM_FOCUS_DISTANCE);
+        } catch (Exception e) {
+            Log.e(TAG, "isHardwareLevelSupported Error", e);
+        }
+        if (minimumLens != null)
+            return minimumLens;
+        return 0;
+    }
+
+    private boolean isAutoFocusSupported() {
+        return  isHardwareLevelSupported(CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_LEGACY) || getMinimumFocusDistance() > 0;
+    }
+
+    private boolean isHardwareLevelSupported(int requiredLevel) {
+        boolean res = false;
+        if (mCameraId == null)
+            return res;
+        try {
+            CameraManager manager = (CameraManager) getContext().getSystemService(Context.CAMERA_SERVICE);
+            CameraCharacteristics cameraCharacteristics = manager.getCameraCharacteristics(mCameraId);
+
+            int deviceLevel = cameraCharacteristics.get(CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL);
+            switch (deviceLevel) {
+                case CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_3:
+                    Log.d(TAG, "Camera support level: INFO_SUPPORTED_HARDWARE_LEVEL_3");
+                    break;
+                case CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_FULL:
+                    Log.d(TAG, "Camera support level: INFO_SUPPORTED_HARDWARE_LEVEL_FULL");
+                    break;
+                case CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_LEGACY:
+                    Log.d(TAG, "Camera support level: INFO_SUPPORTED_HARDWARE_LEVEL_LEGACY");
+                    break;
+                case CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_LIMITED:
+                    Log.d(TAG, "Camera support level: INFO_SUPPORTED_HARDWARE_LEVEL_LIMITED");
+                    break;
+                default:
+                    Log.d(TAG, "Unknown INFO_SUPPORTED_HARDWARE_LEVEL: " + deviceLevel);
+                    break;
+            }
+
+            if (deviceLevel == CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_LEGACY) {
+                res = requiredLevel == deviceLevel;
+            } else {
+                // deviceLevel is not LEGACY, can use numerical sort
+                res = requiredLevel <= deviceLevel;
+            }
+
+        } catch (Exception e) {
+            Log.e(TAG, "isHardwareLevelSupported Error", e);
+        }
+        return res;
     }
 
     static class CompareSizesByArea implements Comparator<Size> {
