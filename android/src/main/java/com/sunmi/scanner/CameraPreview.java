@@ -186,10 +186,7 @@ public class CameraPreview extends TextureView implements TextureView.SurfaceTex
             Log.e(TAG, "updatePreview error, return");
         }
 
-        if (isAutoFocusSupported())
-            captureRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_AUTO);
-        else
-            captureRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
+        captureRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF);
 
         try {
             mCameraCaptureSession.setRepeatingRequest(captureRequestBuilder.build(), null, mBackgroundHandler);
@@ -325,50 +322,7 @@ public class CameraPreview extends TextureView implements TextureView.SurfaceTex
         return 0;
     }
 
-    private boolean isAutoFocusSupported() {
-        return  isHardwareLevelSupported(CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_LEGACY) || getMinimumFocusDistance() > 0;
-    }
-
-    private boolean isHardwareLevelSupported(int requiredLevel) {
-        boolean res = false;
-        if (mCameraId == null)
-            return res;
-        try {
-            CameraManager manager = (CameraManager) getContext().getSystemService(Context.CAMERA_SERVICE);
-            CameraCharacteristics cameraCharacteristics = manager.getCameraCharacteristics(mCameraId);
-
-            int deviceLevel = cameraCharacteristics.get(CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL);
-            switch (deviceLevel) {
-                case CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_3:
-                    Log.d(TAG, "Camera support level: INFO_SUPPORTED_HARDWARE_LEVEL_3");
-                    break;
-                case CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_FULL:
-                    Log.d(TAG, "Camera support level: INFO_SUPPORTED_HARDWARE_LEVEL_FULL");
-                    break;
-                case CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_LEGACY:
-                    Log.d(TAG, "Camera support level: INFO_SUPPORTED_HARDWARE_LEVEL_LEGACY");
-                    break;
-                case CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_LIMITED:
-                    Log.d(TAG, "Camera support level: INFO_SUPPORTED_HARDWARE_LEVEL_LIMITED");
-                    break;
-                default:
-                    Log.d(TAG, "Unknown INFO_SUPPORTED_HARDWARE_LEVEL: " + deviceLevel);
-                    break;
-            }
-
-            if (deviceLevel == CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_LEGACY) {
-                res = requiredLevel == deviceLevel;
-            } else {
-                // deviceLevel is not LEGACY, can use numerical sort
-                res = requiredLevel <= deviceLevel;
-            }
-
-        } catch (Exception e) {
-            Log.e(TAG, "isHardwareLevelSupported Error", e);
-        }
-        return res;
-    }
-
+    ////////////////// HELPER CLASS
     static class CompareSizesByArea implements Comparator<Size> {
 
         @Override
