@@ -55,6 +55,9 @@ public class SunmiInnerScannerViewManager extends ViewGroupManager<SunmiInnerSca
 
     @ReactProp(name = "focus")
     public void setFocus(SunmiInnerScannerView view, int focus){view.setFocus(focus);}
+
+    @ReactProp(name = "autoFocus")
+    public void setAutoFocus(SunmiInnerScannerView view, boolean autoFocus){view.setAutoFocus(autoFocus);}
     
     @Override
     public void addView(SunmiInnerScannerView parent, View child, int index) {

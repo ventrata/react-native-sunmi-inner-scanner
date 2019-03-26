@@ -96,7 +96,9 @@ public class SunmiInnerScannerView extends RelativeLayout implements ImageReader
         mPreview.setFlash(flag);
     }
 
-    public void setFocus(int focus) { mPreview.setFocus(focus); }
+    public void setFocus(int focus) { mPreview.setFocusDistance(focus); }
+
+    public void setAutoFocus(boolean autoFocus) { mPreview.setAutoFocus(autoFocus); }
 
     public void stopCamera() {
         mPreview.closeCamera();
