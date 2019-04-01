@@ -37,6 +37,7 @@ export class SunmiScannerView extends Component {
         onCodeScan: PropTypes.func,
         scanInterval: PropTypes.number,
         mute: PropTypes.number,
+        autoFocus: PropTypes.bool,
         focus: PropTypes.number,
         torch: PropTypes.bool
     };
@@ -50,7 +51,8 @@ export class SunmiScannerView extends Component {
         },
         scanInterval:1000,
         mute:0,
-        focus: 40,
+        focus:0,
+        autoFocus:false,
         torch:false
     }
 
